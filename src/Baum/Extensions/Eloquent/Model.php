@@ -112,8 +112,8 @@ abstract class Model extends BaseModel {
    *
    * @return boolean
    */
-  public static function softDeletesEnabled() {
-    return with(new static)->areSoftDeletesEnabled();
+  public static function softDeletesEnabled(): bool {
+    return static::hasGlobalScope(new SoftDeletingScope);
   }
 
 }
