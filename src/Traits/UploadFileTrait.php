@@ -6,6 +6,8 @@ use Illuminate\Http\UploadedFile;
 use BinshopsBlog\Events\UploadedImage;
 use BinshopsBlog\Models\BinshopsBlogPost;
 use File;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 trait UploadFileTrait
 {
@@ -97,7 +99,7 @@ trait UploadFileTrait
         $destinationPath = $this->image_destination_path();
 
         // make image
-        $resizedImage = \Image::make($photo->getRealPath());
+        $resizedImage = (new ImageManager(new Driver()))->decodePath($photo->getRealPath());
 
 
         if (is_array($image_size_details)) {
@@ -106,11 +108,9 @@ trait UploadFileTrait
             $h = $image_size_details['h'];
 
             if (isset($image_size_details['crop']) && $image_size_details['crop']) {
-                $resizedImage = $resizedImage->fit($w, $h);
+                $resizedImage = $resizedImage->cover($w, $h);
             } else {
-                $resizedImage = $resizedImage->resize($w, $h, function ($constraint) {
-                    $constraint->aspectRatio();
-                });
+                $resizedImage = $resizedImage->scale($w, $h);
             }
         } elseif ($image_size_details === 'fullsize') {
             // nothing to do here - no resizing needed.
@@ -122,7 +122,7 @@ trait UploadFileTrait
         }
 
         // save image
-        $resizedImage->save($destinationPath . '/' . $image_filename, config("binshopsblog.image_quality", 80));
+        $resizedImage->save($destinationPath . '/' . $image_filename, quality: config("binshopsblog.image_quality", 80));
 
         // fireevent
         event(new UploadedImage($image_filename, $resizedImage, $new_blog_post, __METHOD__));
